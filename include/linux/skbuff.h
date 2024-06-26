@@ -826,7 +826,6 @@ struct sk_buff {
 #ifdef CONFIG_TLS_DEVICE
 	__u8			decrypted:1;
 #endif
-	__u8			gro_skip:1;
 
 #ifdef CONFIG_SHORTCUT_FE
 	__u8			fast_forwarded:1;
@@ -2578,6 +2577,21 @@ static inline void skb_mac_header_rebuild(struct sk_buff *skb)
 
 		skb_set_mac_header(skb, -skb->mac_len);
 		memmove(skb_mac_header(skb), old_mac, skb->mac_len);
+	}
+}
+
+/* Move the full mac header up to current network_header.
+ * Leaves skb->data pointing at offset skb->mac_len into the mac_header.
+ * Must be provided the complete mac header length.
+ */
+static inline void skb_mac_header_rebuild_full(struct sk_buff *skb, u32 full_mac_len)
+{
+	if (skb_mac_header_was_set(skb)) {
+		const unsigned char *old_mac = skb_mac_header(skb);
+
+		skb_set_mac_header(skb, -full_mac_len);
+		memmove(skb_mac_header(skb), old_mac, full_mac_len);
+		__skb_push(skb, full_mac_len - skb->mac_len);
 	}
 }
 
